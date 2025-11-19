@@ -1,48 +1,50 @@
 """
-Database Schemas
+Database Schemas for Ad Management
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model represents a MongoDB collection. The collection name is the
+lowercased class name (e.g., Campaign -> "campaign").
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+These are used for validation and by the database helper utilities.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Literal
+from datetime import date
 
-# Example schemas (replace with your own):
+class Campaign(BaseModel):
+    name: str = Field(..., description="Campaign name")
+    brand: str = Field(..., description="Brand or client name")
+    objective: Literal[
+        "awareness",
+        "traffic",
+        "conversions",
+        "leads",
+        "engagement",
+    ] = Field("awareness", description="Primary campaign objective")
+    budget: float = Field(..., ge=0, description="Total budget in USD")
+    start_date: date = Field(..., description="Campaign start date (YYYY-MM-DD)")
+    end_date: date = Field(..., description="Campaign end date (YYYY-MM-DD)")
+    status: Literal["draft", "active", "paused", "completed"] = Field(
+        "draft", description="Lifecycle status"
+    )
 
-class User(BaseModel):
-    """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
-    """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+class Ad(BaseModel):
+    campaign_id: str = Field(..., description="Associated campaign id")
+    name: str = Field(..., description="Ad name")
+    channel: Literal["facebook", "instagram", "google", "tiktok", "x", "linkedin", "other"] = Field(
+        ..., description="Ad channel/platform"
+    )
+    format: Literal["image", "video", "carousel", "text", "html5", "other"] = Field(
+        ..., description="Creative format"
+    )
+    headline: Optional[str] = Field(None, description="Primary headline")
+    cta: Optional[str] = Field(None, description="Call to action text")
+    target_audience: Optional[str] = Field(None, description="Audience notes/segment")
+    status: Literal["active", "paused", "archived"] = Field("active", description="Ad status")
 
-class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Performance(BaseModel):
+    ad_id: str = Field(..., description="Related ad id")
+    date: date = Field(..., description="Metric date (YYYY-MM-DD)")
+    impressions: int = Field(0, ge=0)
+    clicks: int = Field(0, ge=0)
+    spend: float = Field(0, ge=0, description="Spend in USD")
